@@ -25,6 +25,12 @@ build: go-check
 	${GO_BUILD_ENVVARS} ${GO} build \
 		-o ${GOPATH}/bin/kiali -ldflags "-X main.version=${VERSION} -X main.commitHash=${COMMIT_HASH}"
 
+build-linux:
+	for arch in ${TARGET_ARCH}; do \
+		GOOS=linux GOARCH=$${arch} $(MAKE) build; \
+		mv ${GOPATH}/bin/kiali ${GOPATH}/bin/kiali-$${arch}; \
+	done
+
 ## install: Install missing dependencies. Runs `go install` internally
 install:
 	@echo Installing...

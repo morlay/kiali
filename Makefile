@@ -5,6 +5,9 @@ SHELL=/bin/bash
 ROOTDIR=$(CURDIR)
 OUTDIR=${ROOTDIR}/_output
 
+# list for multi-arch image publishing
+TARGET_ARCH ?= amd64
+
 # Identifies the current build.
 # These will be embedded in the app and displayed when it starts.
 VERSION ?= v1.27.0-SNAPSHOT
@@ -64,12 +67,7 @@ GO_BUILD_ENVVARS = \
 	GOARCH=$(GOARCH) \
 	CGO_ENABLED=0 \
 
-# Environment variables to shift between base images.
-ifeq ($(GOARCH),amd64)
-KIALI_DOCKER_FILE ?= Dockerfile-ubi7-minimal
-else
-KIALI_DOCKER_FILE ?= Dockerfile-ubi8-minimal
-endif
+KIALI_DOCKER_FILE ?= Dockerfile
 
 # Determine if we should use Docker OR Podman - value must be one of "docker" or "podman"
 DORP ?= docker
