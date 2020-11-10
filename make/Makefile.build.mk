@@ -25,13 +25,6 @@ build: go-check
 	${GO_BUILD_ENVVARS} ${GO} build \
 		-o ${GOPATH}/bin/kiali -ldflags "-X main.version=${VERSION} -X main.commitHash=${COMMIT_HASH}"
 
-## Allows you to perform a multi-arch build. Set TARGET_ARCH env var to a value containing space-separated names of architectures you want built (e.g. TARGET_ARCH="amd64 arm64").
-build-linux:
-	for arch in ${TARGET_ARCH}; do \
-		GOOS=linux GOARCH=$${arch} $(MAKE) build; \
-		mv ${GOPATH}/bin/kiali ${GOPATH}/bin/kiali-$${arch}; \
-	done
-
 ## install: Install missing dependencies. Runs `go install` internally
 install:
 	@echo Installing...
@@ -94,10 +87,10 @@ run:
 ## swagger-install: Install swagger from github
 swagger-install:
 	@echo "Installing swagger binary to ${GOPATH}/bin..."
-ifeq ($(GOARCH), ppc64le)
+ifeq ($(TARGET_ARCH),ppc64le)
 	curl https://github.com/go-swagger/go-swagger/archive/v${SWAGGER_VERSION}.tar.gz --create-dirs -Lo /tmp/v${SWAGGER_VERSION}.tar.gz && tar -xzf /tmp/v${SWAGGER_VERSION}.tar.gz -C /tmp/ && src_dir='pwd' && cd /tmp/go-swagger-${SWAGGER_VERSION} && go install ./cmd/swagger && cd ${src_dir}
 else
-	curl https://github.com/go-swagger/go-swagger/releases/download/v${SWAGGER_VERSION}/swagger_linux_${GOARCH} --create-dirs -Lo ${GOPATH}/bin/swagger && chmod +x ${GOPATH}/bin/swagger
+	curl https://github.com/go-swagger/go-swagger/releases/download/v${SWAGGER_VERSION}/swagger_linux_${TARGET_ARCH} --create-dirs -Lo ${GOPATH}/bin/swagger && chmod +x ${GOPATH}/bin/swagger
 endif
 
 ## swagger-validate: Validate that swagger.json is correctly. Runs `swagger validate` internally

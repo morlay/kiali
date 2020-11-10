@@ -5,9 +5,6 @@ SHELL=/bin/bash
 ROOTDIR=$(CURDIR)
 OUTDIR=${ROOTDIR}/_output
 
-# list for multi-arch image publishing
-TARGET_ARCH ?= amd64
-
 # Identifies the current build.
 # These will be embedded in the app and displayed when it starts.
 VERSION ?= v1.27.0-SNAPSHOT
@@ -60,12 +57,28 @@ NAMESPACE ?= ${ISTIO_NAMESPACE}
 GOPATH ?= ${HOME}/go
 
 # Environment variables set when running the Go compiler.
+# The target arch will be that of the machine running this build, unless TARGET_ARCH is defined.
 GOOS ?= $(shell go env GOOS)
+ifndef TARGET_ARCH
 GOARCH ?= $(shell go env GOARCH)
+TARGET_ARCH = ${GOARCH}
+else
+GOARCH ?= ${TARGET_ARCH}
+endif
 GO_BUILD_ENVVARS = \
 	GOOS=$(GOOS) \
 	GOARCH=$(GOARCH) \
 	CGO_ENABLED=0 \
+
+# Declare what the base image should be - support multiple architectures
+DOCKERFILE_BASE_IMAGE_amd64   = registry.access.redhat.com/ubi7-minimal
+DOCKERFILE_BASE_IMAGE_arm64   = registry.access.redhat.com/ubi8-minimal
+DOCKERFILE_BASE_IMAGE_ppc64le = registry.access.redhat.com/ubi8-minimal
+DOCKERFILE_BASE_IMAGE_s390x   = registry.access.redhat.com/ubi8-minimal
+DOCKERFILE_BASE_IMAGE ?= ${DOCKERFILE_BASE_IMAGE_${TARGET_ARCH}}
+ifeq ($(DOCKERFILE_BASE_IMAGE),)
+$(error Invalid TARGET_ARCH [${TARGET_ARCH}] - cannot build)
+endif
 
 KIALI_DOCKER_FILE ?= Dockerfile
 

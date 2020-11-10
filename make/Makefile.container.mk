@@ -8,7 +8,8 @@
 	@echo Preparing container image files
 	@mkdir -p ${OUTDIR}/docker
 	@cp -r deploy/docker/* ${OUTDIR}/docker
-	@cp ${GOPATH}/bin/kiali* ${OUTDIR}/docker
+	@cp ${GOPATH}/bin/kiali ${OUTDIR}/docker
+	@sed -i -e "s+FROM .*$$+FROM ${DOCKERFILE_BASE_IMAGE}+" ${OUTDIR}/docker/${KIALI_DOCKER_FILE}
 
 .download-operator-sdk-if-needed:
 	@if [ "$(shell which operator-sdk 2>/dev/null || echo -n "")" == "" ]; then \
@@ -29,13 +30,16 @@
 ## container-build-kiali: Build Kiali container image.
 container-build-kiali: .prepare-kiali-image-files
 ifeq ($(DORP),docker)
+ifndef USE_DOCKER_BUILDX
 	@echo Building container image for Kiali using docker
-	docker build --pull --build-arg=TARGETARCH=${GOARCH} -t ${QUAY_TAG} -f ${OUTDIR}/docker/${KIALI_DOCKER_FILE} ${OUTDIR}/docker
-else ifeq ($(DORP),dockerx)
-	docker buildx build --load --platform=linux/${GOARCH} -t ${QUAY_TAG} -f ${OUTDIR}/docker/${KIALI_DOCKER_FILE} ${OUTDIR}/docker
+	docker build --pull --platform=linux/${TARGET_ARCH} -t ${QUAY_TAG} -f ${OUTDIR}/docker/${KIALI_DOCKER_FILE} ${OUTDIR}/docker
+else
+	@echo Building container image for Kiali using docker buildx
+	docker buildx build --load --platform=linux/${TARGET_ARCH} -t ${QUAY_TAG} -f ${OUTDIR}/docker/${KIALI_DOCKER_FILE} ${OUTDIR}/docker
+endif
 else
 	@echo Building container image for Kiali using podman
-	podman build --pull --build-arg=TARGETARCH=${GOARCH} -t ${QUAY_TAG} -f ${OUTDIR}/docker/${KIALI_DOCKER_FILE} ${OUTDIR}/docker
+	podman build --pull --platorm=linux/${TARGET_ARCH} -t ${QUAY_TAG} -f ${OUTDIR}/docker/${KIALI_DOCKER_FILE} ${OUTDIR}/docker
 endif
 
 ## container-build-operator: Build Kiali operator container image.
@@ -45,7 +49,7 @@ container-build-operator: .ensure-operator-repo-exists .ensure-operator-sdk-exis
 
 ## container-build: Build Kiali and Kiali operator container images
 # On x86_64 machine, build both kiali and operator images.
-ifeq ($(GOARCH),amd64)
+ifeq ($(TARGET_ARCH),amd64)
 container-build: container-build-kiali container-build-operator
 # On other achitectures, only build kiali image.
 else
@@ -55,10 +59,13 @@ endif
 ## container-push-kiali-quay: Pushes the Kiali image to quay.
 container-push-kiali-quay:
 ifeq ($(DORP),docker)
+ifndef USE_DOCKER_BUILDX
 	@echo Pushing Kiali image to ${QUAY_TAG} using docker
 	docker push ${QUAY_TAG}
-else ifeq ($(DORP),dockerx)
-	docker buildx build --push $(foreach arch,${TARGET_ARCH},--platform=linux/${arch}) -t ${QUAY_TAG} -f ${OUTDIR}/docker/${KIALI_DOCKER_FILE} ${OUTDIR}/docker
+else
+	@echo Pushing Kiali image to ${QUAY_TAG} using docker buildx
+	docker buildx build --push --platform=linux/${TARGET_ARCH} -t ${QUAY_TAG} -f ${OUTDIR}/docker/${KIALI_DOCKER_FILE} ${OUTDIR}/docker
+endif
 else
 	@echo Pushing Kiali image to ${QUAY_TAG} using podman
 	podman push ${QUAY_TAG}

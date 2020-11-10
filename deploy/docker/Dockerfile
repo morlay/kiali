@@ -1,8 +1,4 @@
-FROM registry.access.redhat.com/ubi7-minimal AS base-amd64
-FROM registry.access.redhat.com/ubi8-minimal AS base-arm64
-FROM registry.access.redhat.com/ubi8-minimal AS base-ppc64le
-
-FROM base-${TARGETARCH:-amd64}
+FROM registry.access.redhat.com/ubi7-minimal
 
 LABEL maintainer="kiali-dev@googlegroups.com"
 
@@ -16,8 +12,7 @@ RUN microdnf install -y shadow-utils && \
     rm -rf /var/cache/yum && \
     adduser --uid 1000 kiali
 
-ARG TARGETARCH
-COPY kiali-${TARGETARCH} $KIALI_HOME/kiali
+COPY kiali $KIALI_HOME/
 
 ADD console $KIALI_HOME/console/
 
