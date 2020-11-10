@@ -25,6 +25,7 @@ build: go-check
 	${GO_BUILD_ENVVARS} ${GO} build \
 		-o ${GOPATH}/bin/kiali -ldflags "-X main.version=${VERSION} -X main.commitHash=${COMMIT_HASH}"
 
+## Allows you to perform a multi-arch build. Set TARGET_ARCH env var to a value containing space-separated names of architectures you want built (e.g. TARGET_ARCH="amd64 arm64").
 build-linux:
 	for arch in ${TARGET_ARCH}; do \
 		GOOS=linux GOARCH=$${arch} $(MAKE) build; \
